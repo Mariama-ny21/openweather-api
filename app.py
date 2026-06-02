@@ -40,10 +40,21 @@ def get_forecast_choice() -> bool:
         print("Please type 1 or 2.")
 
 
+# Ask the user for their preferred temperature unit.
+def get_temperature_unit() -> str:
+    while True:
+        choice = input("Choose 1 for Celsius or 2 for Fahrenheit: ").strip()
+        if choice == "1":
+            return "metric"
+        if choice == "2":
+            return "imperial"
+        print("Please type 1 or 2.")
+
+
 # Call the OpenWeather current weather API and return the parsed data.
-def fetch_weather(city_name: str, api_key: str) -> dict:
+def fetch_weather(city_name: str, api_key: str, units: str) -> dict:
     # Use `requests` to call the current weather endpoint with query params.
-    params = {"q": city_name, "appid": api_key, "units": "metric"}
+    params = {"q": city_name, "appid": api_key, "units": units}
     response = requests.get(CURRENT_WEATHER_URL, params=params, timeout=10)
     # Raise an HTTPError for bad HTTP status codes.
     response.raise_for_status()
@@ -52,9 +63,9 @@ def fetch_weather(city_name: str, api_key: str) -> dict:
 
 
 # Call the OpenWeather forecast API and return the parsed data.
-def fetch_forecast(city_name: str, api_key: str) -> dict:
+def fetch_forecast(city_name: str, api_key: str, units: str) -> dict:
     # Use `requests` to call the 5-day/3-hour forecast endpoint.
-    params = {"q": city_name, "appid": api_key, "units": "metric"}
+    params = {"q": city_name, "appid": api_key, "units": units}
     response = requests.get(FORECAST_URL, params=params, timeout=10)
     # Raise an HTTPError for bad HTTP status codes.
     response.raise_for_status()
@@ -63,20 +74,23 @@ def fetch_forecast(city_name: str, api_key: str) -> dict:
 
 
 # Print the weather information in a simple format.
-def print_weather(weather_data: dict) -> None:
+def print_weather(weather_data: dict, units: str) -> None:
     city_name = weather_data["name"]
     country_code = weather_data["sys"]["country"]
     description = weather_data["weather"][0]["description"].title()
     temperature = weather_data["main"]["temp"]
     feels_like = weather_data["main"]["feels_like"]
     humidity = weather_data["main"]["humidity"]
+    
+    # Determine the correct unit symbol based on units parameter.
+    unit_symbol = "°C" if units == "metric" else "°F"
     wind_speed = weather_data["wind"]["speed"]
     pressure = weather_data["main"]["pressure"]
 
     print(f"\nWeather for {city_name}, {country_code}")
     print(f"Description: {description}")
-    print(f"Temperature: {temperature}°C")
-    print(f"Feels like: {feels_like}°C")
+    print(f"Temperature: {temperature}{unit_symbol}")
+    print(f"Feels like: {feels_like}{unit_symbol}")
     print(f"Humidity: {humidity}%")
     print(f"Wind Speed: {wind_speed} m/s")
     print(f"Pressure: {pressure} hPa")
@@ -112,10 +126,13 @@ def build_three_day_summary(forecast_data: dict) -> list[dict]:
 
 
 # Print the 3-day forecast in a simple format.
-def print_three_day_forecast(forecast_data: dict) -> None:
+def print_three_day_forecast(forecast_data: dict, units: str) -> None:
     city_name = forecast_data["city"]["name"]
     country_code = forecast_data["city"]["country"]
     summary = build_three_day_summary(forecast_data)
+    
+    # Determine the correct unit symbol based on units parameter.
+    unit_symbol = "°C" if units == "metric" else "°F"
 
     print(f"\n3-Day Forecast for {city_name}, {country_code}")
 
@@ -123,8 +140,8 @@ def print_three_day_forecast(forecast_data: dict) -> None:
     for item in summary:
         date_value = datetime.strptime(item["date"], "%Y-%m-%d").strftime("%d/%m/%Y")
         print(f"{date_value}: {item['description']}")
-        print(f"  Low: {item['min_temp']}°C")
-        print(f"  High: {item['max_temp']}°C")
+        print(f"  Low: {item['min_temp']}{unit_symbol}")
+        print(f"  High: {item['max_temp']}{unit_symbol}")
 
 
 # Run the program and handle simple errors for the user.
@@ -140,14 +157,15 @@ def main() -> None:
         return
 
     wants_forecast = get_forecast_choice()
+    units = get_temperature_unit()
 
     try:
         if wants_forecast:
-            forecast_data = fetch_forecast(city_name, api_key)
-            print_three_day_forecast(forecast_data)
+            forecast_data = fetch_forecast(city_name, api_key, units)
+            print_three_day_forecast(forecast_data, units)
         else:
-            weather_data = fetch_weather(city_name, api_key)
-            print_weather(weather_data)
+            weather_data = fetch_weather(city_name, api_key, units)
+            print_weather(weather_data, units)
     except HTTPError as error:
         # `requests.HTTPError` includes the response; show a short message.
         print(f"OpenWeather API returned an HTTP error: {error}")
