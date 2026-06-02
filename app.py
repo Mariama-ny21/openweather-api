@@ -70,12 +70,16 @@ def print_weather(weather_data: dict) -> None:
     temperature = weather_data["main"]["temp"]
     feels_like = weather_data["main"]["feels_like"]
     humidity = weather_data["main"]["humidity"]
+    wind_speed = weather_data["wind"]["speed"]
+    pressure = weather_data["main"]["pressure"]
 
     print(f"\nWeather for {city_name}, {country_code}")
     print(f"Description: {description}")
     print(f"Temperature: {temperature}°C")
     print(f"Feels like: {feels_like}°C")
     print(f"Humidity: {humidity}%")
+    print(f"Wind Speed: {wind_speed} m/s")
+    print(f"Pressure: {pressure} hPa")
 
 
 # Group forecast entries by day so we can show one simple summary per day.
